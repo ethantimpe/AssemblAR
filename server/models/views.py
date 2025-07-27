@@ -1,7 +1,8 @@
-import os
+from os import getenv
 
 from django.http import JsonResponse, HttpResponse, HttpRequest, HttpResponseNotAllowed, HttpResponseNotFound
 from rest_framework.viewsets import ModelViewSet
+from django_filters.rest_framework import DjangoFilterBackend
 
 from minio import Minio
 
@@ -23,10 +24,14 @@ class OrganizationViewSet(ModelViewSet):
 class InstructionSetViewSet(ModelViewSet):
     queryset = InstructionSet.objects.all()
     serializer_class = InstructionSetSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['organization']
 
 class InstructionStepViewSet(ModelViewSet):
     queryset = InstructionStep.objects.all()
     serializer_class = InstructionStepSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['instruction_set']
 
 class UserMetricViewSet(ModelViewSet):
     queryset = UserMetric.objects.all()
@@ -41,13 +46,13 @@ class InstructionStepMetricViewSet(ModelViewSet):
 ##############################
 
 class FileView():
-    def __init__(self):
-        #Initialize MinIO connection
+    def connect_minio(self):
         try:
             self.mc = Minio(
-                    os.getenv('MINIO_HOSTNAME'),
-                    access_key=os.getenv('MINIO_ACCESS_KEY'),
-                    secret_key=os.getenv('MINIO_SECRET_KEY'),
+                    getenv('MINIO_HOSTNAME'),
+                    access_key=getenv('MINIO_ACCESS_KEY'),
+                    secret_key=getenv('MINIO_SECRET_KEY'),
+                    secure=False
                   )
             
             self.mc.list_buckets()
@@ -57,21 +62,23 @@ class FileView():
 
 
     def file_view(self, request: HttpRequest, file_id: int):
+        self.connect_minio()
+
         if request.method != 'GET':
             return HttpResponseNotAllowed(['GET'])
         
         part = Part.objects.get(id=file_id)
-
+        response = None
         # Get data of specified object
         try:
-            response = self.mc.get_object(part.bucket, part.path)
+            response = self.mc.get_object(part.file_bucket, part.file_path)
             content_type = response.headers.get("Content-Type")
 
             return HttpResponse(response.data, content_type=content_type)
         except Part.DoesNotExist:
             return HttpResponseNotFound("Part not found")
-        except:
-            return HttpResponseNotFound("File not found")
+        except Exception as e:
+            return HttpResponseNotFound(f"File not found at '{part.file_bucket}/{part.file_path}': {e}")
         finally:
             if response:
                 response.close()

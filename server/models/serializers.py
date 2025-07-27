@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
+import django_filters
 
 from .models import *
 
@@ -19,8 +20,6 @@ class InstructionSetSerializer(ModelSerializer):
         fields = '__all__'
 
 class InstructionStepSerializer(ModelSerializer):
-    # Expand nested JSON
-    part = PartSerializer(read_only=True)
 
     class Meta:
         model = InstructionStep

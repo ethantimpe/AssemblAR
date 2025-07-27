@@ -19,7 +19,6 @@ from django.urls import path, include
 from rest_framework import routers
 
 from models.views import *
-from play.views import *
 
 router = routers.DefaultRouter()
 router.register(r'part', PartViewSet)
@@ -35,5 +34,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
     path('file/<int:file_id>/', file_view.file_view),
-    path('play/', playcanvas),
 ]
