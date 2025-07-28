@@ -1,0 +1,7 @@
+apiVersion: v2
+name: AssemblAR
+namespace: assemblar
+description: AssemblAR Application
+type: application
+version: 0.1.0
+appVersion: "1.16.0"

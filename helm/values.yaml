@@ -1,0 +1,17 @@
+postgres:
+  db_name: postgresdb
+  username: postgresadmin
+  password: postgresadmin
+
+  storage: "1Gi"
+  replicas: 1
+
+minio:
+  username: minioadmin
+  password: minioadmin
+
+  storage: "1Gi"
+  replicas: 1
+
+assemblar_server:
+  replicas: 3

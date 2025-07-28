@@ -10,4 +10,4 @@ RUN cd /assemblar-server && \
     pip install -r requirements.txt && \
     python manage.py makemigrations
 
-ENTRYPOINT ["python", "manage.py", "runserver"]
+ENTRYPOINT ["./start.sh"]
