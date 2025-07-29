@@ -1,3 +1,4 @@
 server/db.sqlite3
 **/__pycache__/*
 server/play/templates/*
+minio*

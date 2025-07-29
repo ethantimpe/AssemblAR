@@ -24,11 +24,6 @@ class InstructionStepSerializer(ModelSerializer):
     class Meta:
         model = InstructionStep
         fields = '__all__'
-
-class UserMetricSerializer(ModelSerializer):
-    class Meta:
-        model = UserMetric
-        fields = '__all__'
     
 class InstructionStepMetricSerializer(ModelSerializer):
     class Meta:

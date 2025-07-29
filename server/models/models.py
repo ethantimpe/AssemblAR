@@ -41,16 +41,8 @@ class InstructionStep(models.Model):
     goal_rot = models.JSONField(default=dict, help_text='Goal 3D rotation of the part')
     
     scale = models.FloatField(default=1)
-
-class UserMetric(models.Model):
-    id = models.AutoField(auto_created=True, primary_key=True)
-
-    age = models.PositiveSmallIntegerField()
-    
 class InstructionStepMetric(models.Model):
     id = models.AutoField(auto_created=True, primary_key=True)
-
-    user = models.ForeignKey(UserMetric, on_delete=models.DO_NOTHING)
 
     instruction_step = models.ForeignKey(InstructionStep, on_delete=models.DO_NOTHING)
 

@@ -25,7 +25,6 @@ router.register(r'part', PartViewSet)
 router.register(r'organization', OrganizationViewSet)
 router.register(r'instruction_set', InstructionSetViewSet)
 router.register(r'instruction_step', InstructionStepViewSet)
-router.register(r'metrics/user', UserMetricViewSet)
 router.register(r'metrics/instruction_step', InstructionStepMetricViewSet)
 
 file_view = FileView()

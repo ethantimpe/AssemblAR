@@ -33,10 +33,6 @@ class InstructionStepViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['instruction_set']
 
-class UserMetricViewSet(ModelViewSet):
-    queryset = UserMetric.objects.all()
-    serializer_class = UserMetricSerializer
-
 class InstructionStepMetricViewSet(ModelViewSet):
     queryset = InstructionStepMetric.objects.all()
     serializer_class = InstructionStepMetricSerializer
