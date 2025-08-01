@@ -17,6 +17,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject leftHand;
     [SerializeField] private GameObject rightHand;
     [SerializeField] private float rayOffset = 0.2f;
+    [SerializeField] private Material defaultMaterial;
 
     private bool aHeld = false;
     private bool xHeld = false;
@@ -33,6 +34,12 @@ public class GameManager : MonoBehaviour
     [SerializeField] private string fileEndpoint = "file";
 
     [Header("UI")]
+    [SerializeField] private GameObject stepIconParent;
+    [SerializeField] private GameObject stepIconPrefab;
+    private List<Image> stepIconList = new List<Image>();
+    [SerializeField] private Color currentColor;
+    [SerializeField] private Color finishedColor;
+    [SerializeField] private Color todoColor;
     [SerializeField] private Text stepText;
     [SerializeField] private Button startButton;
     [SerializeField] private Image loadingBar;
@@ -57,6 +64,7 @@ public class GameManager : MonoBehaviour
         StartCoroutine(InitializeInstructionSet());
 
         loadingBar.gameObject.SetActive(true);
+        nextStepButton.gameObject.SetActive(false);
     }
 
     void Update()
@@ -106,14 +114,15 @@ public class GameManager : MonoBehaviour
             {
                 if (aPressed && !aHeld)
                 {
-
                     // Place where pointing
                     aHeld = true;
                     state = GameState.PLAYING;
 
                     stepText.text = instructionSteps[currentStep].text;
+                    stepIconList[currentStep].color = currentColor;
                     instructionSteps[currentStep].Part.gameObject.GetComponent<BasicAnimation>().enabled = true;
                     instructionSteps[currentStep].Part.gameObject.GetComponent<BasicAnimation>().Restart();
+                    nextStepButton.gameObject.SetActive(true);
                 }
                 else if (!aPressed)
                 {
@@ -129,38 +138,40 @@ public class GameManager : MonoBehaviour
     {
         stepTimer += Time.deltaTime;
 
-        var rightDevices = new List<InputDevice>();
-        var leftDevices = new List<InputDevice>();
-        InputDevices.GetDevicesAtXRNode(XRNode.RightHand, rightDevices);
-        InputDevices.GetDevicesAtXRNode(XRNode.LeftHand, leftDevices);
+        // var rightDevices = new List<InputDevice>();
+        // var leftDevices = new List<InputDevice>();
+        // InputDevices.GetDevicesAtXRNode(XRNode.RightHand, rightDevices);
+        // InputDevices.GetDevicesAtXRNode(XRNode.LeftHand, leftDevices);
 
-        // A Button (Right Controller)
-        if (rightDevices.Count > 0)
-        {
-            InputDevice rightController = rightDevices[0];
-            if (rightController.TryGetFeatureValue(CommonUsages.primaryButton, out bool aPressed))
-            {
-                if (aPressed && !aHeld)
-                {
-                    aHeld = true;
+        // // A Button (Right Controller)
+        // if (rightDevices.Count > 0)
+        // {
+        //     InputDevice rightController = rightDevices[0];
+        //     if (rightController.TryGetFeatureValue(CommonUsages.primaryButton, out bool aPressed))
+        //     {
+        //         if (aPressed && !aHeld)
+        //         {
+        //             aHeld = true;
 
-                    AdvanceStep();
-                }
-                else if (!aPressed)
-                {
-                    aHeld = false;
-                }
-            }
-        }
+        //             AdvanceStep();
+        //         }
+        //         else if (!aPressed)
+        //         {
+        //             aHeld = false;
+        //         }
+        //     }
+        // }
     }
 
     private void Finished()
     {
+        nextStepButton.gameObject.SetActive(false);
+        stepIconParent.SetActive(false);
         stepText.text = "Finished.";
         exitButton.gameObject.SetActive(true);
     }
 
-    private void Exit()
+    public void Exit()
     {
         Application.Quit(0);
     }
@@ -169,6 +180,7 @@ public class GameManager : MonoBehaviour
     {
         StartCoroutine(PostMetric());
         instructionSteps[currentStep].Part.gameObject.GetComponent<BasicAnimation>().Stop();
+        stepIconList[currentStep].color = finishedColor;
 
         if (currentStep == instructionSteps.Count - 1)
         {
@@ -178,10 +190,11 @@ public class GameManager : MonoBehaviour
         {
             currentStep++;
             instructionSteps[currentStep].Part.gameObject.SetActive(true);
+            stepIconList[currentStep].color = currentColor;
             BasicAnimation anim = instructionSteps[currentStep].Part.gameObject.GetComponent<BasicAnimation>();
             anim.enabled = true;
             anim.Restart();
-            stepText.text = instructionSteps[currentStep].text + "\nPress A to advance";
+            stepText.text = instructionSteps[currentStep].text;
         }
     }
 
@@ -204,6 +217,14 @@ public class GameManager : MonoBehaviour
 
     IEnumerator InitializeInstructionSet()
     {
+        try
+        {
+
+        }
+        catch (Exception e)
+        {
+            
+        }
         float tic = Time.time;
 
         loadingBar.fillAmount = 0.1f;
@@ -211,6 +232,7 @@ public class GameManager : MonoBehaviour
         // Get instruction set
         UnityWebRequest req = UnityWebRequest.Get($"{backendHost}:{backendPort}/{instructionSetEndpoint}/1");
         yield return req.SendWebRequest();
+        Debug.Log(req.downloadHandler.text);
         req.Dispose();
         loadingBar.fillAmount = 0.2f;
 
@@ -231,7 +253,6 @@ public class GameManager : MonoBehaviour
             Part part = JsonConvert.DeserializeObject<Part>(req.downloadHandler.text);
             step.Part = part;
 
-            stepText.text = req.responseCode.ToString();
             req.Dispose();
 
             Debug.Log($"Pulled instruction_step \"{step.text}\" with part \"{part.name}\"");
@@ -241,22 +262,41 @@ public class GameManager : MonoBehaviour
             yield return req.SendWebRequest();
 
             // Create part GameObject
-            GameObject obj = GLB.ToGameObject(req.downloadHandler.data);
-            obj.transform.SetParent(objectParent.transform);
-            obj.SetActive(false);
-            obj.name = part.name;
+            try
+            {
+                GameObject obj = GLB.ToGameObject(req.downloadHandler.data);
+                obj.transform.SetParent(objectParent.transform);
+                obj.SetActive(false);
+                obj.name = part.name;
 
-            // Assign animation
-            BasicAnimation anim = obj.AddComponent<BasicAnimation>();
-            anim.initialPos = step.initial_pos;
-            anim.goalPos = step.goal_pos;
-            anim.initialRot = step.initial_rot;
-            anim.goalRot = step.goal_rot;
-            anim.enabled = false;
-            // anim.scale = step.scale;
-            part.gameObject = obj;
-            req.Dispose();
+                MeshRenderer[] meshes = obj.GetComponentsInChildren<MeshRenderer>();
+
+                foreach (MeshRenderer mesh in meshes){
+                    mesh.material = defaultMaterial;
+                }
+
+                // Assign animation
+                BasicAnimation anim = obj.AddComponent<BasicAnimation>();
+                anim.initialPos = step.initial_pos;
+                anim.goalPos = step.goal_pos;
+                anim.initialRot = step.initial_rot;
+                anim.goalRot = step.goal_rot;
+                anim.enabled = false;
+                // anim.scale = step.scale;
+                part.gameObject = obj;
+                req.Dispose();
+            }
+            catch (Exception e)
+            {
+                stepText.text = e.ToString();
+            }
+
             loadingBar.fillAmount += 0.7f / instructionSteps.Count;
+            GameObject newStepIcon = Instantiate(stepIconPrefab);
+            newStepIcon.transform.SetParent(stepIconParent.transform, false);
+            Image img = newStepIcon.GetComponent<Image>();
+            stepIconList.Add(img);
+            img.color = todoColor;
 
             Debug.Log($"Created GameObject for \"{step.Part.name}\"");
         }
@@ -264,8 +304,9 @@ public class GameManager : MonoBehaviour
         Debug.Log($"Loaded instruction set in {(Time.time - tic).ToString("f6")} seconds");
 
         currentStep = 0;
-        instructionSteps[0].Part.gameObject.SetActive(true);
+        instructionSteps[currentStep].Part.gameObject.SetActive(true);
         loadingBar.gameObject.SetActive(false);
+        stepIconParent.gameObject.SetActive(true);
         stepText.text = "Point to a spot on the floor and press A to begin instructions.";
         state = GameState.PLACING;
     }
